@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
+import * as THREE from "three";
 
 // TODO: Player의 상태 타입 정의
 interface PlayerState {
@@ -127,10 +128,26 @@ export default function Player() {
     if (!rbRef.current) return;
 
     const speed = 5;
+
+    // 카메라가 보는 방향 계산
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    direction.y = 0;  // y축 제거 (수평 이동만)
+    direction.normalize();
+
+    // 카메라 오른쪽 방향 계산
+    const right = new THREE.Vector3();
+    right.crossVectors(camera.up, direction).normalize();
+
+    // 입력에 따라 이동 방향 계산
+    const moveDirection = new THREE.Vector3();
+    moveDirection.addScaledVector(direction, -state.direction.z);  // 앞/뒤
+    moveDirection.addScaledVector(right, state.direction.x);  // 좌/우
+
     const velocity = {
-      x: state.direction.x * speed,
+      x: moveDirection.x * speed,
       y: rbRef.current.linvel().y,  // 기존 y 속도 유지 (중력)
-      z: state.direction.z * speed
+      z: moveDirection.z * speed
     };
 
     rbRef.current.setLinvel(velocity, true);
